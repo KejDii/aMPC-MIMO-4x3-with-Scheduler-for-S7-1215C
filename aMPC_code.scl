@@ -1,0 +1,2117 @@
+﻿FUNCTION "MatrixFilled" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      lb_1 : DInt;
+      ub_1 : DInt;
+      lb_2 : DInt;
+      ub_2 : DInt;
+      val : Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+      j : DInt;
+   END_VAR
+
+
+BEGIN
+	
+	
+	FOR #i := #lb_1 TO #ub_1 DO
+	    FOR #j := #lb_2 TO #ub_2 DO
+	        #C[#i, #j] := #val;
+	    END_FOR;
+	END_FOR;
+	
+	
+	
+END_FUNCTION
+
+DATA_BLOCK "Scheduler"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      tm_break : Bool;
+      flag_global : DInt;
+      flag_iter : DInt;
+      time_start {InstructionName := 'DTL'; LibVersion := '1.0'} : DTL;
+      time_bound : UDInt;
+      time_check {InstructionName := 'DTL'; LibVersion := '1.0'} : DTL;
+      time_duration : UDInt;
+   END_VAR
+
+
+BEGIN
+
+END_DATA_BLOCK
+
+DATA_BLOCK "aMPCmemory"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      u_all : Array[1..80, 1..1] of Real;
+      u_all_prim : Array[1..1, 1..80] of Real;
+      u : Array[1..4, 1..20, 1..1] of Real;
+      V : Array[1..12, 1..20, 1..1] of Real;
+      Theta : Array[1..3, 1..80, 1..1] of Real;
+      Theta_prim : Array[1..3, 1..1, 1..80] of Real;
+      y_hat : Array[1..3, 1..1, 1..1] of Real;
+      eps : Array[1..3, 1..1, 1..1] of Real;
+      V_diff : Array[1..3, 1..80, 1..1] of Real;
+      norm_u_sq : Array[1..1, 1..1] of Real;
+      y0 : Array[1..3, 1..20, 1..1] of Real;
+      y0_work : Array[1..20, 1..1] of Real;
+      Y0_all : Array[1..60, 1..1] of Real;
+      W_all : Array[1..60, 1..1] of Real;
+      Q { ExternalWritable := 'False'} : Array[1..12, 1..20, 1..1] of Real;
+      Q_all : Array[1..60, 1..4] of Real;
+      Q_all_prim : Array[1..4, 1..60] of Real;
+      R : Array[1..4, 1..4] of Real;
+      w : Array[1..3, 1..20, 1..1] of Real;
+      w_sub_y0 : Array[1..60, 1..1] of Real;
+      Q_primQ : Array[1..4, 1..4] of Real;
+      inverted : Array[1..4, 1..4] of Real;
+      duze : Array[1..4, 1..60] of Real;
+      close : Array[1..4, 1..1] of Real;
+      V2j { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[1..20, 1..20] of Real;
+      dU { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[1..20, 1..1] of Real;
+      h_temp { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[1..20, 1..1] of Real;
+      rozrzut_u : Array[1..4, 1..1] of Real;
+   END_VAR
+
+
+BEGIN
+
+END_DATA_BLOCK
+
+FUNCTION "MatrixIdentity" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      lb : DInt;
+      ub : DInt;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+   END_VAR
+
+
+BEGIN
+	
+	
+	"MatrixFilled"(lb_1 := #lb,
+	               ub_1 := #ub,
+	               lb_2 := #lb,
+	               ub_2 := #ub,
+	               val := 0.0,
+	               C => #C);
+	FOR #i := #lb TO #ub DO
+	    #C[#i, #i] := 1;
+	END_FOR;
+	
+	
+	
+END_FUNCTION
+
+DATA_BLOCK "aMPCconfig"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      H : Int;
+      L : Int;
+      nV : Int;
+      kappa : Real;
+      prog_szumu : Real;
+      gamma : Real;
+      ro : Array[1..4, 1..1] of Real;
+      aMPC_init : Bool;
+      czy_pobudzenie : Bool;
+   END_VAR
+
+
+BEGIN
+   H := 20;
+   L := 1;
+   nV := 20;
+   kappa := 1.0;
+   prog_szumu := 0.5;
+   gamma := 0.01;
+   ro[1,1] := 24000.0;
+   ro[2,1] := 18000.0;
+   ro[3,1] := 18000.0;
+   ro[4,1] := 18000.0;
+
+END_DATA_BLOCK
+
+DATA_BLOCK "aMPCInOut"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      u_in : Array[1..4, 1..1] of Real;
+      y_obiekt : Array[1..3, 1..1] of Real;
+      y_zad : Array[1..3, 1..1] of Real;
+      u_out : Array[1..4, 1..1] of Real;
+      y_model : Array[1..3, 1..1] of Real;
+   END_VAR
+
+
+BEGIN
+   y_zad[1,1] := 10.0;
+   y_zad[2,1] := 10.0;
+   y_zad[3,1] := 10.0;
+
+END_DATA_BLOCK
+
+FUNCTION "MatrixTranspose" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      A : Array[*, *] of Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+      j : DInt;
+      lb_1 : DInt;
+      lb_2 : DInt;
+      ub_1 : DInt;
+      ub_2 : DInt;
+      status : Int;
+   END_VAR
+
+
+BEGIN
+	
+	//if rhere is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        #lb_1 := LOWER_BOUND(ARR := #A, DIM := 1);
+	        #lb_2 := LOWER_BOUND(ARR := #A, DIM := 2);
+	        #ub_1 := UPPER_BOUND(ARR := #A, DIM := 1);
+	        #ub_2 := UPPER_BOUND(ARR := #A, DIM := 2);
+	        FOR #i := #lb_2 TO #ub_2 DO
+	            FOR #j := #lb_1 TO #ub_1 DO
+	                #C[#i, #j] := #A[#j, #i];
+	            END_FOR;
+	        END_FOR;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+END_FUNCTION
+
+FUNCTION "MatrixSubVal" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      A : Array[*, *] of Real;
+      val : Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+      j : DInt;
+      lb_1 : DInt;
+      lb_2 : DInt;
+      ub_1 : DInt;
+      ub_2 : DInt;
+      status : Int;
+   END_VAR
+
+
+BEGIN
+	
+	//if rhere is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        #lb_1 := LOWER_BOUND(ARR := #A, DIM := 1);
+	        #lb_2 := LOWER_BOUND(ARR := #A, DIM := 2);
+	        #ub_1 := UPPER_BOUND(ARR := #A, DIM := 1);
+	        #ub_2 := UPPER_BOUND(ARR := #A, DIM := 2);
+	        FOR #i := #lb_1 TO #ub_1 DO
+	            FOR #j := #lb_2 TO #ub_2 DO
+	                #C[#i, #j] := #A[#i, #j] - #val;
+	            END_FOR;
+	        END_FOR;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+	
+END_FUNCTION
+
+FUNCTION "MatrixSub" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      A : Array[*, *] of Real;
+      B : Array[*, *] of Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+      j : DInt;
+      lb_1 : DInt;
+      lb_2 : DInt;
+      ub_1 : DInt;
+      ub_2 : DInt;
+      status : Int;
+   END_VAR
+
+
+BEGIN
+	
+	//if rhere is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        #lb_1 := LOWER_BOUND(ARR := #A, DIM := 1);
+	        #lb_2 := LOWER_BOUND(ARR := #A, DIM := 2);
+	        #ub_1 := UPPER_BOUND(ARR := #A, DIM := 1);
+	        #ub_2 := UPPER_BOUND(ARR := #A, DIM := 2);
+	        IF (#lb_1 = LOWER_BOUND(ARR := #B, DIM := 1) AND
+	            #lb_2 = LOWER_BOUND(ARR := #B, DIM := 2) AND
+	            #ub_1 = UPPER_BOUND(ARR := #B, DIM := 1) AND
+	            #ub_2 = UPPER_BOUND(ARR := #B, DIM := 2)) THEN
+	            FOR #i := #lb_1 TO #ub_1 DO
+	                FOR #j := #lb_2 TO #ub_2 DO
+	                    #C[#i, #j] := #A[#i, #j] - #B[#i, #j];
+	                END_FOR;
+	            END_FOR;
+	        ELSE
+	            "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	            RETURN;
+	        END_IF;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+END_FUNCTION
+
+FUNCTION "MatrixMulVal" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      A : Array[*, *] of Real;
+      val : Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+      j : DInt;
+      lb_1 : DInt;
+      status : Int;
+      lb_2 : DInt;
+      ub_1 : DInt;
+      ub_2 : DInt;
+   END_VAR
+
+
+BEGIN
+	
+	//if rhere is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        #lb_1 := LOWER_BOUND(ARR := #A, DIM := 1);
+	        #lb_2 := LOWER_BOUND(ARR := #A, DIM := 2);
+	        #ub_1 := UPPER_BOUND(ARR := #A, DIM := 1);
+	        #ub_2 := UPPER_BOUND(ARR := #A, DIM := 2);
+	        FOR #i := #lb_1 TO #ub_1 DO
+	            FOR #j := #lb_2 TO #ub_2 DO
+	                #C[#i, #j] := #A[#i, #j] * #val;
+	            END_FOR;
+	        END_FOR;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+END_FUNCTION
+
+FUNCTION "MatrixInvert" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      A : Array[*, *] of Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+      j : DInt;
+      k : DInt;
+      lb : DInt;
+      ub : DInt;
+      maxInd : DInt;
+      tempVal : Real;
+      status : Int;
+   END_VAR
+
+
+BEGIN
+	
+	
+	// WARNING 1: this function doesn't check whether the matrix is singular
+	
+	// WARNING 2: this function overwrites the matrix A. You need to create a copy
+	// if you wish to retain its values.
+	
+	// In this function, the A and C matrices are treated as if they are
+	// concatenated like this: [A C]. That means, for example, that if two rows are
+	// swapped, they're swapped in both matrices; or if elements of a row are 
+	// multiplied, they're also multiplied in both matrices.
+	// 
+	//if rhere is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        #lb := LOWER_BOUND(ARR := #A, DIM := 1);
+	        #ub := UPPER_BOUND(ARR := #A, DIM := 1);
+	        // Check if A is a square array
+	        IF (#lb = LOWER_BOUND(ARR := #A, DIM := 2) AND
+	            #ub = UPPER_BOUND(ARR := #A, DIM := 2)) THEN
+	            // Initialize C as an identity matrix of the same size as A
+	            "MatrixIdentity"(lb := #lb,
+	                             ub := #ub,
+	                             C => #C);
+	            // Gaussian elimination with pivoting
+	            FOR #i := #lb TO #ub DO
+	                // Find the index of the maximum absolute value from the values of the
+	                // i-th column of the A array that are on or below the diagonal
+	                #maxInd := #i;
+	                FOR #j := #i + 1 TO #ub DO
+	                    IF (ABS(IN := #A[#j, #i]) > ABS(IN := #A[#maxInd, #i])) THEN
+	                        #maxInd := #j;
+	                    END_IF;
+	                END_FOR;
+	                // If the pivot is zero, the determinant will also be zero
+	                IF (ABS(#A[#maxInd, #i]) < 10 ** (-12)) THEN
+	                    RETURN;
+	                END_IF;
+	                
+	                // If the pivot (#A[#maxInd, #i]) is not on the diagonal, swap rows so
+	                // that it is
+	                IF #maxInd <> #i THEN
+	                    FOR #j := #lb TO #ub DO
+	                        #tempVal := #A[#maxInd, #j];
+	                        #A[#maxInd, #j] := #A[#i, #j]; // #A changed
+	                        #A[#i, #j] := #tempVal; // #A changed
+	                        #tempVal := #C[#maxInd, #j];
+	                        #C[#maxInd, #j] := #C[#i, #j];
+	                        #C[#i, #j] := #tempVal;
+	                    END_FOR;
+	                END_IF;
+	                
+	                // Normalize i-th row according to the pivot
+	                #tempVal := #A[#i, #i];
+	                FOR #j := #lb TO #ub DO
+	                    #A[#i, #j] := #A[#i, #j] / #tempVal; // #A changed
+	                    #C[#i, #j] := #C[#i, #j] / #tempVal;
+	                END_FOR;
+	                
+	                // Subtract a multiple of one row from another to zero other elements
+	                // in the i-th column
+	                FOR #j := #lb TO #ub DO
+	                    IF (#i <> #j) THEN
+	                        #tempVal := #A[#j, #i] / #A[#i, #i];
+	                        FOR #k := #lb TO #ub DO
+	                            #A[#j, #k] := #A[#j, #k] - #tempVal * #A[#i, #k]; // #A changed
+	                            #C[#j, #k] := #C[#j, #k] - #tempVal * #C[#i, #k];
+	                        END_FOR;
+	                    END_IF;
+	                END_FOR;
+	            END_FOR;
+	        ELSE
+	            "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	            RETURN;
+	        END_IF;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+END_FUNCTION
+
+FUNCTION "MatrixAddVal" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      A : Array[*, *] of Real;
+      val : Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+      j : DInt;
+      lb_1 : DInt;
+      lb_2 : DInt;
+      ub_1 : DInt;
+      ub_2 : DInt;
+      status : Int;
+   END_VAR
+
+
+BEGIN
+	
+	//if rhere is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        #lb_1 := LOWER_BOUND(ARR := #A, DIM := 1);
+	        #lb_2 := LOWER_BOUND(ARR := #A, DIM := 2);
+	        #ub_1 := UPPER_BOUND(ARR := #A, DIM := 1);
+	        #ub_2 := UPPER_BOUND(ARR := #A, DIM := 2);
+	        FOR #i := #lb_1 TO #ub_1 DO
+	            FOR #j := #lb_2 TO #ub_2 DO
+	                #C[#i, #j] := #A[#i, #j] + #val;
+	            END_FOR;
+	        END_FOR;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+END_FUNCTION
+
+FUNCTION "MatrixAdd" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      A : Array[*, *] of Real;
+      B : Array[*, *] of Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+      j : DInt;
+      lb_1 : DInt;
+      lb_2 : DInt;
+      ub_1 : DInt;
+      ub_2 : DInt;
+      time_check : Time;
+      status : Int;
+   END_VAR
+
+
+BEGIN
+	
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        #lb_1 := LOWER_BOUND(ARR := #A, DIM := 1);
+	        #lb_2 := LOWER_BOUND(ARR := #A, DIM := 2);
+	        #ub_1 := UPPER_BOUND(ARR := #A, DIM := 1);
+	        #ub_2 := UPPER_BOUND(ARR := #A, DIM := 2);
+	        IF (#lb_1 = LOWER_BOUND(ARR := #B, DIM := 1) AND
+	            #lb_2 = LOWER_BOUND(ARR := #B, DIM := 2) AND
+	            #ub_1 = UPPER_BOUND(ARR := #B, DIM := 1) AND
+	            #ub_2 = UPPER_BOUND(ARR := #B, DIM := 2)) THEN
+	            FOR #i := #lb_1 TO #ub_1 DO
+	                FOR #j := #lb_2 TO #ub_2 DO
+	                    #C[#i, #j] := #A[#i, #j] + #B[#i, #j];
+	                END_FOR;
+	            END_FOR;
+	        ELSE
+	            "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	            RETURN;
+	        END_IF;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+END_FUNCTION
+
+FUNCTION "calc_Y0" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      y_last : Real;
+      V : Array[*, *] of Real;
+      u_past : Array[*, *] of Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      Y0_out : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : Int;
+      j : Int;
+      status : Int;
+   END_VAR
+
+
+BEGIN
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        FOR #i := 1 TO "aMPCconfig".H DO
+	            FOR #j := 1 TO "aMPCconfig".nV DO
+	                "aMPCmemory".V2j[#i, #j] := 0.0;
+	            END_FOR;
+	        END_FOR;
+	        
+	        FOR #i := 1 TO "aMPCconfig".nV DO
+	            "aMPCmemory".dU[#i, 1] := 0.0;
+	        END_FOR;
+	        
+	        
+	        
+	        
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        
+	        //policzenie V2j
+	        FOR #i := 1 TO "aMPCconfig".H DO
+	            FOR #j := 1 TO "aMPCconfig".nV - #i DO
+	                "aMPCmemory".V2j[#i, #j] := #V[#j + #i, 1];
+	            END_FOR;
+	        END_FOR;
+	        
+	        //policzenie dU
+	        FOR #i := 1 TO "aMPCconfig".nV - 1 DO
+	            "aMPCmemory".dU[#i, 1] := #u_past[#i, 1] - #u_past[#i + 1, 1];
+	        END_FOR;
+	        
+	        //liczenie y0, pierwsza wartość poza pętlą 
+	        FOR #i := 1 TO "aMPCconfig".H DO
+	            #Y0_out[#i, 1] := 0.0;
+	        END_FOR;
+	        
+	        
+	        
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	//second part
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        
+	        #Y0_out[1, 1] := #y_last;
+	        FOR #i := 1 TO "aMPCconfig".nV DO
+	            #Y0_out[1, 1] := #Y0_out[1, 1] + "aMPCmemory".V2j[1, #i] * "aMPCmemory".dU[#i, 1];
+	        END_FOR;
+	        //dodawane składowe od V*dU
+	        FOR #i := 1 TO "aMPCconfig".H - 1 DO
+	            FOR #j := 1 TO "aMPCconfig".nV - #i DO
+	                #Y0_out[1 + #i, 1] := #Y0_out[1 + #i, 1] + "aMPCmemory".V2j[#i + 1, #j] * "aMPCmemory".dU[#j, 1];
+	            END_FOR;
+	        END_FOR;
+	        //dodawane składowe od y0(i-1)
+	        FOR #i := 2 TO "aMPCconfig".H DO
+	            #Y0_out[#i, 1] := #Y0_out[#i, 1] + #Y0_out[#i - 1, 1];
+	        END_FOR;
+	        
+	        
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+END_FUNCTION
+
+FUNCTION "build_Q" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      V : Array[*, *] of Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      Q_out : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : Int;
+      j : Int;
+      status : Int;
+   END_VAR
+
+
+BEGIN
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        
+	        FOR #i := 1 TO "aMPCconfig".L - 1 DO
+	            FOR #j := 1 TO "aMPCconfig".H DO
+	                IF #j >= #i THEN
+	                    #Q_out[#j, #i] := #V[#j - #i + 1, 1];
+	                ELSE
+	                    #Q_out[#j, #i] := 0.0; // Wypełnienie zerami, brak błędu indeksacji
+	                END_IF;
+	            END_FOR;
+	        END_FOR;
+	        //policzenie parametrów h i ułożenie
+	        //najpierw zerowanie
+	        
+	        FOR #i := 1 TO "aMPCconfig".H - "aMPCconfig".L + 1 DO
+	            "aMPCmemory".h_temp[#i, 1] := 0.0;
+	            FOR #j := 1 TO #i DO
+	                "aMPCmemory".h_temp[#i, 1] := "aMPCmemory".h_temp[#i, 1] + #V[#j, 1];
+	            END_FOR;
+	        END_FOR;
+	        
+	        FOR #i := 1 TO "aMPCconfig".H - "aMPCconfig".L + 1 DO
+	            #Q_out["aMPCconfig".H + 1 - #i, "aMPCconfig".L] := "aMPCmemory".h_temp["aMPCconfig".H - "aMPCconfig".L + 2 - #i, 1];
+	        END_FOR;
+	        
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+END_FUNCTION
+
+FUNCTION "MatrixMul" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      A : Array[*, *] of Real;
+      B : Array[*, *] of Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+      j : DInt;
+      status : Int;
+      k : DInt;
+      lb_a_1 : DInt;
+      lb_a_2 : DInt;
+      ub_a_1 : DInt;
+      ub_a_2 : DInt;
+      lb_b_1 : DInt;
+      lb_b_2 : DInt;
+      ub_b_1 : DInt;
+      ub_b_2 : DInt;
+   END_VAR
+
+
+BEGIN
+	
+	//if rhere is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        #lb_a_1 := LOWER_BOUND(ARR := #A, DIM := 1);
+	        #lb_a_2 := LOWER_BOUND(ARR := #A, DIM := 2);
+	        #ub_a_1 := UPPER_BOUND(ARR := #A, DIM := 1);
+	        #ub_a_2 := UPPER_BOUND(ARR := #A, DIM := 2);
+	        #lb_b_2 := LOWER_BOUND(ARR := #B, DIM := 2);
+	        #ub_b_2 := UPPER_BOUND(ARR := #B, DIM := 2);
+	        IF (#lb_a_2 = LOWER_BOUND(ARR := #B, DIM := 1) AND
+	            #ub_a_2 = UPPER_BOUND(ARR := #B, DIM := 1)) THEN
+	            "MatrixFilled"(lb_1 := #lb_a_1,
+	                           lb_2 := #lb_b_2,
+	                           ub_1 := #ub_a_1,
+	                           ub_2 := #ub_b_2,
+	                           val := 0,
+	                           C => #C);
+	            
+	            FOR #i := #lb_a_1 TO #ub_a_1 DO
+	                FOR #j := #lb_b_2 TO #ub_b_2 DO
+	                    FOR #k := #lb_a_2 TO #ub_a_2 DO
+	                        #C[#i, #j] := #C[#i, #j] + #A[#i, #k] * #B[#k, #j];
+	                    END_FOR;
+	                END_FOR;
+	            END_FOR;
+	        ELSE
+	            "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	            RETURN;
+	        END_IF;
+	        
+	        
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+END_FUNCTION
+
+FUNCTION "SchedulerInit" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+      status : Int;
+   END_VAR
+
+
+BEGIN
+	
+	#status := RD_LOC_T("Scheduler".time_start);
+	"Scheduler".flag_global := 0;
+	
+	
+	
+END_FUNCTION
+
+FUNCTION "aMPC" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+      i : Int;
+      j : Int;
+      k : Int;
+      r : Int;
+      c : Int;
+      status : Int;
+      Temp_max : Real;
+      Temp_min : Real;
+      a : Real;
+   END_VAR
+
+
+BEGIN
+	//init
+	IF "aMPCconfig".aMPC_init = FALSE THEN
+	    // --- Wyjście 1 ---
+	    FOR #i := 2 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[1, #i, 1] := LREAL_TO_REAL(0.1456*100.0) - (#i - 1) * LREAL_TO_REAL(7.5361e-4*100.0);
+	    END_FOR;
+	    "aMPCmemory".V[1, 1, 1] := 0.4457*100.0;
+	    
+	    FOR #i := 2 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[2, #i, 1] := LREAL_TO_REAL(0.0117*100.0) - (#i - 1) * LREAL_TO_REAL(7.9391e-5*100.0);
+	    END_FOR;
+	    "aMPCmemory".V[2, 1, 1] := 0.0357*100.0;
+	    
+	    FOR #i := 2 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[3, #i, 1] := 0;
+	    END_FOR;
+	    "aMPCmemory".V[3, 1, 1] := 0;
+	    
+	    FOR #i := 1 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[4, #i, 1] := 0;
+	    END_FOR;
+	    "aMPCmemory".V[4, 1, 1] := 0;
+	    
+	    // --- Wyjście 2 ---
+	    FOR #i := 2 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[5, #i, 1] := LREAL_TO_REAL(0.0063*100.0) - (#i - 1) * LREAL_TO_REAL(-5.6997e-4*100.0);
+	    END_FOR;
+	    "aMPCmemory".V[5, 1, 1] := 0.0084*100.0;
+	    
+	    FOR #i := 2 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[6, #i, 1] := LREAL_TO_REAL(-0.0141*100.0) - (#i - 1) * LREAL_TO_REAL(-1.814e-4*100.0);
+	    END_FOR;
+	    "aMPCmemory".V[6, 1, 1] := -0.0437*100.0;
+	    
+	    FOR #i := 2 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[7, #i, 1] := LREAL_TO_REAL(0.0178*100.0) - (#i - 1) * LREAL_TO_REAL(1.2682e-4*100.0);
+	    END_FOR;
+	    "aMPCmemory".V[7, 1, 1] := 0.0548*100.0;
+	    
+	    FOR #i := 1 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[8, #i, 1] := 0;
+	    END_FOR;
+	    "aMPCmemory".V[8, 1, 1] := 0; 
+	    
+	    // --- Wyjście 3 ---
+	    FOR #i := 2 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[9, #i, 1] := LREAL_TO_REAL(7.5742e-5*100.0) - (#i - 1) * LREAL_TO_REAL(-1.4134e-4*100.0);
+	    END_FOR;
+	    "aMPCmemory".V[9, 1, 1] := 5.329e-5*100.0;
+	    
+	    FOR #i := 2 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[10, #i, 1] := LREAL_TO_REAL(-3.4661e-4*100.0) - (#i - 1) * LREAL_TO_REAL(5.9564e-5*100.0);
+	    END_FOR;
+	    "aMPCmemory".V[10, 1, 1] := -4.5155e-4*100.0;
+	    
+	    FOR #i := 2 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[11, #i, 1] := LREAL_TO_REAL(-0.0134*100.0) - (#i - 1) * LREAL_TO_REAL(-1.0119e-4*100.0);
+	    END_FOR;
+	    "aMPCmemory".V[11, 1, 1] := -0.041*100.0;
+	    
+	    FOR #i := 2 TO "aMPCconfig".nV DO
+	        "aMPCmemory".V[12, #i, 1] := LREAL_TO_REAL(0.0181*100.0) - (#i - 1) * LREAL_TO_REAL(7.3415e-5*100.0);
+	    END_FOR;
+	    "aMPCmemory".V[12, 1, 1] := 0.0550*100.0;
+	    "aMPCconfig".aMPC_init := TRUE;
+	END_IF;
+	//adapt
+	
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        //shift u
+	        FOR #j := 1 TO 4 DO
+	            FOR #i := 1 TO "aMPCconfig".nV - 1 DO
+	                "aMPCmemory".u[#j, "aMPCconfig".nV + 1 - #i, 1] := "aMPCmemory".u[#j, "aMPCconfig".nV - #i, 1];
+	            END_FOR;
+	        END_FOR;
+	        "aMPCmemory".u[1, 1, 1] := "aMPCInOut".u_in[1, 1];
+	        "aMPCmemory".u[2, 1, 1] := "aMPCInOut".u_in[2, 1];
+	        "aMPCmemory".u[3, 1, 1] := "aMPCInOut".u_in[3, 1];
+	        "aMPCmemory".u[4, 1, 1] := "aMPCInOut".u_in[4, 1];
+	        //ułożenie U_all
+	        FOR #j := 1 TO 4 DO
+	            FOR #i := 1 TO "aMPCconfig".nV DO
+	                "aMPCmemory".u_all[(#j - 1) * "aMPCconfig".nV + #i, 1] := "aMPCmemory".u[#j, #i, 1];
+	            END_FOR;
+	        END_FOR;
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+	"MatrixTranspose"(A := "aMPCmemory".u_all,
+	                  C => "aMPCmemory".u_all_prim);
+	
+	
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        //ułożenie Thet
+	        FOR #j := 1 TO 3 DO
+	            FOR #k := 1 TO 4 DO
+	                FOR #i := 1 TO "aMPCconfig".nV DO
+	                    "aMPCmemory".Theta[#j, (#k - 1) * "aMPCconfig".nV + #i, 1] := "aMPCmemory".V[(#j - 1) * 4 + #k, #i, 1];
+	                END_FOR;
+	            END_FOR;
+	        END_FOR;
+	        
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+	"MatrixTranspose"(A := "aMPCmemory".Theta[1],
+	                  C => "aMPCmemory".Theta_prim[1]);
+	"MatrixTranspose"(A := "aMPCmemory".Theta[2],
+	                  C => "aMPCmemory".Theta_prim[2]);
+	"MatrixTranspose"(A := "aMPCmemory".Theta[3],
+	                  C => "aMPCmemory".Theta_prim[3]);
+	
+	//predykcja modelu
+	"MatrixMul"(A := "aMPCmemory".Theta_prim[1],
+	            B := "aMPCmemory".u_all,
+	            C => "aMPCmemory".y_hat[1]);
+	"MatrixMul"(A := "aMPCmemory".Theta_prim[2],
+	            B := "aMPCmemory".u_all,
+	            C => "aMPCmemory".y_hat[2]);
+	"MatrixMul"(A := "aMPCmemory".Theta_prim[3],
+	            B := "aMPCmemory".u_all,
+	            C => "aMPCmemory".y_hat[3]);
+	
+	//eps
+	"MatrixSubVal"(A := "aMPCmemory".y_hat[1],
+	               C => "aMPCmemory".eps[1],
+	               val := "aMPCInOut".y_obiekt[1, 1]);
+	"MatrixSubVal"(A := "aMPCmemory".y_hat[2],
+	               C => "aMPCmemory".eps[2],
+	               val := "aMPCInOut".y_obiekt[2, 1]);
+	"MatrixSubVal"(A := "aMPCmemory".y_hat[3],
+	               C => "aMPCmemory".eps[3],
+	               val := "aMPCInOut".y_obiekt[3, 1]);
+	
+	//norm u sq
+	"MatrixMul"(A := "aMPCmemory".u_all_prim,
+	            B := "aMPCmemory".u_all,
+	            C => "aMPCmemory".norm_u_sq);
+	
+	"MatrixAddVal"(A := "aMPCmemory".norm_u_sq,
+	               C => "aMPCmemory".norm_u_sq,
+	               val := "aMPCconfig".kappa);
+	
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        //rozrzuty
+	        "aMPCconfig".czy_pobudzenie := FALSE;
+	        FOR #j := 1 TO 4 DO
+	            #Temp_max := "aMPCmemory".u[#j, 1, 1];
+	            #Temp_min := "aMPCmemory".u[#j, 1, 1];
+	            FOR #i := 2 TO "aMPCconfig".nV DO // nV zamiast H, zgodnie z historią u
+	                IF "aMPCmemory".u[#j, #i, 1] > #Temp_max THEN
+	                    #Temp_max := "aMPCmemory".u[#j, #i, 1];
+	                END_IF;
+	                IF "aMPCmemory".u[#j, #i, 1] < #Temp_min THEN
+	                    #Temp_min := "aMPCmemory".u[#j, #i, 1];
+	                END_IF;
+	            END_FOR;
+	            "aMPCmemory".rozrzut_u[#j, 1] := #Temp_max - #Temp_min;
+	            IF "aMPCmemory".rozrzut_u[#j, 1] > 0.01 THEN
+	                "aMPCconfig".czy_pobudzenie := TRUE;
+	            END_IF;
+	        END_FOR;
+	        
+	        
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+	//update
+	"MatrixMulVal"(A := "aMPCmemory".u_all,
+	               C => "aMPCmemory".V_diff[1],
+	               val := "aMPCconfig".gamma * "aMPCmemory".eps[1, 1, 1] / "aMPCmemory".norm_u_sq[1, 1]);
+	"MatrixMulVal"(A := "aMPCmemory".u_all,
+	               C => "aMPCmemory".V_diff[2],
+	               val := "aMPCconfig".gamma * "aMPCmemory".eps[2, 1, 1] / "aMPCmemory".norm_u_sq[1, 1]);
+	"MatrixMulVal"(A := "aMPCmemory".u_all,
+	               C => "aMPCmemory".V_diff[3],
+	               val := "aMPCconfig".gamma * "aMPCmemory".eps[3, 1, 1] / "aMPCmemory".norm_u_sq[1, 1]);
+	
+	IF ABS("aMPCmemory".eps[1, 1, 1]) > "aMPCconfig".prog_szumu AND "aMPCconfig".czy_pobudzenie THEN
+	    "MatrixSub"(A := "aMPCmemory".Theta[1],
+	                B := "aMPCmemory".V_diff[1],
+	                C => "aMPCmemory".Theta[1]);
+	END_IF;
+	
+	IF ABS("aMPCmemory".eps[2, 1, 1]) > "aMPCconfig".prog_szumu AND "aMPCconfig".czy_pobudzenie THEN
+	    "MatrixSub"(A := "aMPCmemory".Theta[2],
+	                B := "aMPCmemory".V_diff[2],
+	                C => "aMPCmemory".Theta[2]);
+	END_IF;
+	
+	IF ABS("aMPCmemory".eps[3, 1, 1]) > "aMPCconfig".prog_szumu AND "aMPCconfig".czy_pobudzenie THEN
+	    "MatrixSub"(A := "aMPCmemory".Theta[3],
+	                B := "aMPCmemory".V_diff[3],
+	                C => "aMPCmemory".Theta[3]);
+	END_IF;
+	
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        //rozpakowanie parametrów
+	        FOR #i := 1 TO 3 DO
+	            FOR #j := 1 TO 4 DO
+	                FOR #k := 1 TO "aMPCconfig".nV DO
+	                    "aMPCmemory".V[(#i - 1) * 4 + #j, #k, 1] := "aMPCmemory".Theta[#i, (#j - 1) * "aMPCconfig".nV + #k, 1];
+	                END_FOR;
+	            END_FOR;
+	        END_FOR;
+	        // Wymuszenie zer na wybranych torach (zgodnie z kodem Matlaba)
+	        FOR #k := 1 TO "aMPCconfig".nV DO
+	            "aMPCmemory".V[3, #k, 1] := 0.0; // param31
+	            "aMPCmemory".V[4, #k, 1] := 0.0; // param41
+	            "aMPCmemory".V[8, #k, 1] := 0.0; // param42
+	        END_FOR;
+	        
+	       
+	        
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	//wpisanie wartości zadanej
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        #a := 0.0;
+	        "zapisy".sp_curr[1] := 0.1*100.0;
+	        IF "time_tracking" > 3000.0 THEN
+	            "zapisy".sp_curr[1] := 0.2*100.0;
+	        END_IF;
+	        IF "time_tracking" > 5000.0 THEN
+	            "zapisy".sp_curr[1] := 0.04 * 100.0;
+	        END_IF;
+	        IF "time_tracking" > 7000.0 THEN
+	            "zapisy".sp_curr[1] := 0.10*100.0;
+	        END_IF;
+	        IF "time_tracking" > 12500.0 THEN
+	            "zapisy".sp_curr[1] := 0.25*100.0;
+	        END_IF;
+	        
+	        "zapisy".sp_curr[2] := 0.1*100.0;
+	        IF "time_tracking" > 3000.0 THEN
+	            "zapisy".sp_curr[2] := 0.04 * 100.0;
+	        END_IF;
+	        IF "time_tracking" > 5000.0 THEN
+	            "zapisy".sp_curr[2] := 0.25 * 100.0;
+	        END_IF;
+	        IF "time_tracking" > 7000.0 THEN
+	            "zapisy".sp_curr[2] := 0.2*100.0;
+	        END_IF;
+	        IF "time_tracking" > 9000.0 THEN
+	            "zapisy".sp_curr[2] := 0.25 * 100.0;
+	        END_IF;
+	        IF "time_tracking" > 11000.0 THEN
+	            "zapisy".sp_curr[2] := 0.17 * 100.0;
+	        END_IF;
+	        IF "time_tracking" > 12500.0 THEN
+	            "zapisy".sp_curr[2] := 0.05 * 100.0;
+	        END_IF;
+	        
+	        "zapisy".sp_curr[3] := 0.1*100.0;
+	        IF "time_tracking" > 3000.0 THEN
+	            "zapisy".sp_curr[3] := 0.04 * 100.0;
+	        END_IF;
+	        IF "time_tracking" > 5000.0 THEN
+	            "zapisy".sp_curr[3] := 0.25 * 100.0;
+	        END_IF;
+	        IF "time_tracking" > 7000.0 THEN
+	            "zapisy".sp_curr[3] := 0.15 * 100.0;
+	        END_IF;
+	        IF "time_tracking" > 10000.0 THEN
+	            "zapisy".sp_curr[3] := 0.1 * 100.0;
+	        END_IF;
+	        IF "time_tracking" > 12500.0 THEN
+	            "zapisy".sp_curr[3] := 0.25 * 100.0;
+	        END_IF;
+	        
+	        "aMPCInOut".y_zad[1, 1] := #a * "aMPCInOut".y_zad[1, 1] + (1.0 - #a) * "zapisy".sp_curr[1];
+	        "aMPCInOut".y_zad[2, 1] := #a * "aMPCInOut".y_zad[2, 1] + (1.0 - #a) * "zapisy".sp_curr[2];
+	        "aMPCInOut".y_zad[3, 1] := #a * "aMPCInOut".y_zad[3, 1] + (1.0 - #a) * "zapisy".sp_curr[3];
+	        
+	        "zapisy".curr_w[1] := "aMPCInOut".y_zad[1, 1];
+	        "zapisy".curr_w[2] := "aMPCInOut".y_zad[2, 1];
+	        "zapisy".curr_w[3] := "aMPCInOut".y_zad[3, 1];
+	        
+	        FOR #i := 1 TO "aMPCconfig".H DO
+	            "zapisy".pred_time := "time_tracking" + (INT_TO_REAL(#i) * 8.0);
+	            
+	            "zapisy".sp_pred[1] := 0.1*100.0;
+	            IF "zapisy".pred_time > 3000.0 THEN
+	                "zapisy".sp_pred[1] := 0.2*100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 5000.0 THEN
+	                "zapisy".sp_pred[1] := 0.04 * 100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 7000.0 THEN
+	                "zapisy".sp_pred[1] := 0.10*100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 12500.0 THEN
+	                "zapisy".sp_pred[1] := 0.25*100.0;
+	            END_IF;
+	            
+	            "zapisy".sp_pred[2] := 0.1*100.0;
+	            IF "zapisy".pred_time > 3000.0 THEN
+	                "zapisy".sp_pred[2] := 0.04 * 100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 5000.0 THEN
+	                "zapisy".sp_pred[2] := 0.25 * 100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 7000.0 THEN
+	                "zapisy".sp_pred[2] := 0.2*100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 9000.0 THEN
+	                "zapisy".sp_pred[2] := 0.25*100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 11000.0 THEN
+	                "zapisy".sp_pred[2] := 0.17 * 100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 12500.0 THEN
+	                "zapisy".sp_pred[2] := 0.05 * 100.0;
+	            END_IF;
+	            
+	            "zapisy".sp_pred[3] := 0.1*100.0;
+	            IF "zapisy".pred_time > 3000.0 THEN
+	                "zapisy".sp_pred[3] := 0.04 * 100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 5000.0 THEN
+	                "zapisy".sp_pred[3] := 0.25 * 100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 7000.0 THEN
+	                "zapisy".sp_pred[3] := 0.15 * 100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 10000.0 THEN
+	                "zapisy".sp_pred[3] := 0.1 * 100.0;
+	            END_IF;
+	            IF "zapisy".pred_time > 12500.0 THEN
+	                "zapisy".sp_pred[3] := 0.25 * 100.0;
+	            END_IF;
+	            
+	            "zapisy".curr_w[1] := #a * "zapisy".curr_w[1] + (1.0 - #a) * "zapisy".sp_pred[1];
+	            "zapisy".curr_w[2] := #a * "zapisy".curr_w[2] + (1.0 - #a) * "zapisy".sp_pred[2];
+	            "zapisy".curr_w[3] := #a * "zapisy".curr_w[3] + (1.0 - #a) * "zapisy".sp_pred[3];
+	            
+	            "aMPCmemory".w[1, #i, 1] := "zapisy".curr_w[1];
+	            "aMPCmemory".w[2, #i, 1] := "zapisy".curr_w[2];
+	            "aMPCmemory".w[3, #i, 1] := "zapisy".curr_w[3];
+	            
+	        END_FOR;
+	        
+	        
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	//zbudowanie mniejszych Q
+	FOR #i := 1 TO 12 DO
+	    "build_Q"(Q_out => "aMPCmemory".Q[#i],
+	              V := "aMPCmemory".V[#i]);
+	END_FOR;
+	
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        //złożenie dużej Q
+	        FOR #i := 1 TO 3 DO // Wiersze blokowe (dla 3 wyjść)
+	            FOR #j := 1 TO 4 DO // Kolumny blokowe (dla 4 wejść)
+	                FOR #r := 1 TO "aMPCconfig".H DO // Wiersze w pojedynczym bloku
+	                    FOR #c := 1 TO "aMPCconfig".L DO // Kolumny w pojedynczym bloku
+	                        // Indeksowanie blokowe [3*H x 4*L]
+	                        "aMPCmemory".Q_all[(#i - 1) * "aMPCconfig".H + #r, (#j - 1) * "aMPCconfig".L + #c] :=
+	                        "aMPCmemory".Q[(#i - 1) * 4 + #j, #r, #c];
+	                    END_FOR;
+	                END_FOR;
+	            END_FOR;
+	        END_FOR;
+	        //zerowanie Y0
+	        FOR #i := 1 TO 3 DO
+	            FOR #j := 1 TO "aMPCconfig".H DO
+	                "aMPCmemory".y0[#i, #j, 1] := 0.0;
+	            END_FOR;
+	        END_FOR;
+	        
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	//obliczenie Y0_1
+	"calc_Y0"(u_past := "aMPCmemory".u[1],
+	          V := "aMPCmemory".V[1],
+	          y_last := "aMPCInOut".y_obiekt[1, 1],
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[1],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[1]);
+	//druga skladowa
+	"calc_Y0"(u_past := "aMPCmemory".u[2],
+	          V := "aMPCmemory".V[2],
+	          y_last := 0.0,
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[1],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[1]);
+	//trzecia składowa
+	"calc_Y0"(u_past := "aMPCmemory".u[3],
+	          V := "aMPCmemory".V[3],
+	          y_last := 0.0,
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[1],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[1]);
+	//czwarta składowa
+	"calc_Y0"(u_past := "aMPCmemory".u[4],
+	          V := "aMPCmemory".V[4],
+	          y_last := 0.0,
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[1],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[1]);
+	
+	//obliczenie Y0_2
+	"calc_Y0"(u_past := "aMPCmemory".u[1],
+	          V := "aMPCmemory".V[5],
+	          y_last := "aMPCInOut".y_obiekt[2, 1],
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[2],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[2]);
+	//druga skladowa
+	"calc_Y0"(u_past := "aMPCmemory".u[2],
+	          V := "aMPCmemory".V[6],
+	          y_last := 0.0,
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[2],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[2]);
+	//trzecia składowa
+	"calc_Y0"(u_past := "aMPCmemory".u[3],
+	          V := "aMPCmemory".V[7],
+	          y_last := 0.0,
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[2],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[2]);
+	//czwarta składowa
+	"calc_Y0"(u_past := "aMPCmemory".u[4],
+	          V := "aMPCmemory".V[8],
+	          y_last := 0.0,
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[2],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[2]);
+	
+	//obliczenie Y0_3
+	"calc_Y0"(u_past := "aMPCmemory".u[1],
+	          V := "aMPCmemory".V[9],
+	          y_last := "aMPCInOut".y_obiekt[3, 1],
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[3],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[3]);
+	//druga skladowa
+	"calc_Y0"(u_past := "aMPCmemory".u[2],
+	          V := "aMPCmemory".V[10],
+	          y_last := 0.0,
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[3],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[3]);
+	//trzecia składowa
+	"calc_Y0"(u_past := "aMPCmemory".u[3],
+	          V := "aMPCmemory".V[11],
+	          y_last := 0.0,
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[3],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[3]);
+	//czwarta składowa
+	"calc_Y0"(u_past := "aMPCmemory".u[4],
+	          V := "aMPCmemory".V[12],
+	          y_last := 0.0,
+	          Y0_out => "aMPCmemory".y0_work);
+	"MatrixAdd"(A := "aMPCmemory".y0[3],
+	            B := "aMPCmemory".y0_work,
+	            C => "aMPCmemory".y0[3]);
+	
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        //złożenie Y0_all i W_all
+	        FOR #i := 1 TO 3 DO
+	            FOR #j := 1 TO "aMPCconfig".H DO
+	                "aMPCmemory".Y0_all[(#i - 1) * "aMPCconfig".H + #j, 1] := "aMPCmemory".y0[#i, #j, 1];
+	                "aMPCmemory".W_all[(#i - 1) * "aMPCconfig".H + #j, 1] := "aMPCmemory".w[#i, #j, 1];
+	            END_FOR;
+	        END_FOR;
+	        
+	        //zerowanie macierzy R (ważne przed wpisaniem przekątnej, jeśli L zmienia się w locie!)
+	        FOR #i := 1 TO 4 * "aMPCconfig".L DO
+	            FOR #j := 1 TO 4 * "aMPCconfig".L DO
+	                "aMPCmemory".R[#i, #j] := 0.0;
+	            END_FOR;
+	        END_FOR;
+	        
+	        //macierz R
+	        FOR #i := 1 TO 4 DO
+	            FOR #j := 1 TO "aMPCconfig".L DO
+	                "aMPCmemory".R[(#i - 1) * "aMPCconfig".L + #j, (#i - 1) * "aMPCconfig".L + #j] := "aMPCconfig".ro[#i, 1];
+	            END_FOR;
+	        END_FOR;
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	//analityczne wyznaczenie u_next
+	"MatrixTranspose"(A := "aMPCmemory".Q_all,
+	                  C => "aMPCmemory".Q_all_prim);
+	"MatrixMul"(A := "aMPCmemory".Q_all_prim,
+	            B := "aMPCmemory".Q_all,
+	            C => "aMPCmemory".Q_primQ);
+	
+	"MatrixAdd"(A := "aMPCmemory".Q_primQ,
+	            B := "aMPCmemory".R,
+	            C => "aMPCmemory".Q_primQ);
+	"MatrixInvert"(A := "aMPCmemory".Q_primQ,
+	               C => "aMPCmemory".inverted);
+	"MatrixMul"(A := "aMPCmemory".inverted,
+	            B := "aMPCmemory".Q_all_prim,
+	            C => "aMPCmemory".duze);
+	"MatrixSub"(A := "aMPCmemory".W_all,
+	            B := "aMPCmemory".Y0_all,
+	            C => "aMPCmemory".w_sub_y0);
+	"MatrixMul"(A := "aMPCmemory".duze,
+	            B := "aMPCmemory".w_sub_y0,
+	            C => "aMPCmemory".close);
+	
+	//if there is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        //rozpakowanie dU i aktualizacja wyjścia (wzorowane na u_in + dU)
+	        "aMPCInOut".u_out[1, 1] := "aMPCInOut".u_in[1, 1] + "aMPCmemory".close[1, 1];
+	        "aMPCInOut".u_out[2, 1] := "aMPCInOut".u_in[2, 1] + "aMPCmemory".close["aMPCconfig".L + 1, 1];
+	        "aMPCInOut".u_out[3, 1] := "aMPCInOut".u_in[3, 1] + "aMPCmemory".close[2 * "aMPCconfig".L + 1, 1];
+	        "aMPCInOut".u_out[4, 1] := "aMPCInOut".u_in[4, 1] + "aMPCmemory".close[3 * "aMPCconfig".L + 1, 1];
+	    ELSE
+	        "Scheduler".flag_global := "Scheduler".flag_global+1;
+	        RETURN;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+END_FUNCTION
+
+FUNCTION "MatrixConcat" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      A : Array[*, *] of Real;
+      B : Array[*, *] of Real;
+      dim : UDInt;
+   END_VAR
+
+   VAR_OUTPUT 
+      C : Array[*, *] of Real;
+   END_VAR
+
+   VAR_TEMP 
+      consistentDim : UDInt;
+      i : DInt;
+      j : DInt;
+      lb_consistent : DInt;
+      ub_consistent : DInt;
+      lb_a_inconsistent : DInt;
+      ub_a_inconsistent : DInt;
+      lb_b_inconsistent : DInt;
+      ub_b_inconsistent : DInt;
+      n : DInt;
+      status : Int;
+   END_VAR
+
+
+BEGIN
+	
+	//if rhere is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        IF (#dim = 1) THEN
+	            #consistentDim := 2;
+	        ELSIF (#dim = 2) THEN
+	            #consistentDim := 1;
+	        ELSE
+	            RETURN;
+	        END_IF;
+	        
+	        IF (LOWER_BOUND(ARR := #A, DIM := #consistentDim) = LOWER_BOUND(ARR := #B, DIM := #consistentDim) AND
+	            UPPER_BOUND(ARR := #A, DIM := #consistentDim) = UPPER_BOUND(ARR := #B, DIM := #consistentDim)) THEN
+	            #lb_consistent := LOWER_BOUND(ARR := #A, DIM := #consistentDim);
+	            #ub_consistent := UPPER_BOUND(ARR := #A, DIM := #consistentDim);
+	            #lb_a_inconsistent := LOWER_BOUND(ARR := #A, DIM := #dim);
+	            #ub_a_inconsistent := UPPER_BOUND(ARR := #A, DIM := #dim);
+	            #lb_b_inconsistent := LOWER_BOUND(ARR := #B, DIM := #dim);
+	            #ub_b_inconsistent := UPPER_BOUND(ARR := #B, DIM := #dim);
+	            #n := #ub_b_inconsistent - #lb_b_inconsistent + 1;
+	            IF (#dim = 1) THEN
+	                FOR #i := #lb_a_inconsistent TO #ub_a_inconsistent DO
+	                    FOR #j := #lb_consistent TO #ub_consistent DO
+	                        #C[#i, #j] := #A[#i, #j];
+	                    END_FOR;
+	                END_FOR;
+	                FOR #i := 1 TO #n DO
+	                    FOR #j := #lb_consistent TO #ub_consistent DO
+	                        #C[#ub_a_inconsistent + #i, #j] := #B[#lb_b_inconsistent + #i - 1, #j];
+	                    END_FOR;
+	                END_FOR;
+	            ELSIF (#dim = 2) THEN
+	                FOR #i := #lb_consistent TO #ub_consistent DO
+	                    FOR #j := #lb_a_inconsistent TO #ub_a_inconsistent DO
+	                        #C[#i, #j] := #A[#i, #j];
+	                    END_FOR;
+	                END_FOR;
+	                FOR #i := #lb_consistent TO #ub_consistent DO
+	                    FOR #j := 1 TO #n DO
+	                        #C[#i, #ub_a_inconsistent + #j] := #B[#i, #lb_b_inconsistent + #j - 1];
+	                    END_FOR;
+	                END_FOR;
+	            END_IF;
+	        ELSE
+	            RETURN;
+	        END_IF;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+	
+END_FUNCTION
+
+FUNCTION "MatrixDet" : Void
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      A : Array[*, *] of Real;
+   END_VAR
+
+   VAR_OUTPUT 
+      det : Real;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;
+      j : DInt;
+      k : DInt;
+      lb : DInt;
+      ub : DInt;
+      n : DInt;
+      maxInd : DInt;
+      sign : Int;
+      status : Int;
+      tempVal : Real;
+   END_VAR
+
+
+BEGIN
+	
+	//if rhere is no break or this is the correct function
+	IF (NOT "Scheduler".tm_break) OR ("Scheduler".tm_break AND "Scheduler".flag_iter = "Scheduler".flag_global) THEN
+	    //correct function -> cancel the break
+	    IF "Scheduler".tm_break THEN
+	        "Scheduler".tm_break := FALSE;
+	    END_IF;
+	    
+	    //local flag = global flag
+	    "Scheduler".flag_iter := "Scheduler".flag_global;
+	    
+	    //time check
+	    #status := RD_LOC_T("Scheduler".time_check);
+	    IF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND + 1 THEN
+	        "Scheduler".time_duration := 1_000_000_000 + "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    ELSIF "Scheduler".time_check.SECOND = "Scheduler".time_start.SECOND THEN
+	        "Scheduler".time_duration := "Scheduler".time_check.NANOSECOND - "Scheduler".time_start.NANOSECOND;
+	    END_IF;
+	    
+	    //if computation time is too long then make a break
+	    IF "Scheduler".time_duration > "Scheduler".time_bound THEN
+	        "Scheduler".tm_break := TRUE;
+	    END_IF;
+	    
+	    //if there is no break - compute normally
+	    IF NOT "Scheduler".tm_break THEN
+	        
+	        
+	        #lb := LOWER_BOUND(ARR := #A, DIM := 1);
+	        #ub := UPPER_BOUND(ARR := #A, DIM := 1);
+	        // Check if A is a square array
+	        IF (#lb = LOWER_BOUND(ARR := #A, DIM := 2) AND
+	            #ub = UPPER_BOUND(ARR := #A, DIM := 2)) THEN
+	            #n := #ub - #lb;
+	            IF #n = 1 THEN
+	                #det := #A[#lb, #lb];
+	            ELSIF #n = 2 THEN
+	                #det := #A[#lb, #lb] * #A[#ub, #ub] - #A[#lb, #ub] * #A[#ub, #lb];
+	            ELSE
+	                #det := 1.0;
+	                #sign := 1;
+	                // Use Gaussian elimination with pivoting to obtain the upper
+	                // triangular form
+	                FOR #i := #lb TO #ub DO
+	                    // Find the index of the maximum absolute value from the values of
+	                    // the i-th column of the A array that are on or below the diagonal
+	                    #maxInd := #i;
+	                    FOR #j := #i + 1 TO #ub DO
+	                        IF (ABS(IN := #A[#j, #i]) > ABS(IN := #A[#maxInd, #i])) THEN
+	                            #maxInd := #j;
+	                        END_IF;
+	                    END_FOR;
+	                    // If the pivot is zero, the determinant will also be zero
+	                    IF (ABS(#A[#maxInd, #i]) < 10 ** (-12)) THEN
+	                        #det := 0.0;
+	                        EXIT;
+	                    END_IF;
+	                    
+	                    // If the pivot (#A[#maxInd, #i]) is not on the diagonal, swap rows
+	                    // so that it is and change the sign
+	                    IF #maxInd <> #i THEN
+	                        FOR #j := #lb TO #ub DO
+	                            #tempVal := #A[#maxInd, #j];
+	                            #A[#maxInd, #j] := #A[#i, #j]; // #A changed only locally
+	                            #A[#i, #j] := #tempVal; // #A changed only locally
+	                        END_FOR;
+	                        #sign := - #sign;
+	                    END_IF;
+	                    
+	                    // Subtract a multiple of one row from another to zero elements in the
+	                    // i-th column that are below the diagonal
+	                    FOR #j := #i + 1 TO #ub DO
+	                        #tempVal := #A[#j, #i] / #A[#i, #i];
+	                        FOR #k := #lb TO #ub DO
+	                            #A[#j, #k] := #A[#j, #k] - #tempVal * #A[#i, #k]; // #A changed only locally
+	                        END_FOR;
+	                    END_FOR;
+	                END_FOR;
+	                
+	                IF (#det <> 0) THEN
+	                    FOR #i := #lb TO #ub DO
+	                        #det := #det * #A[#i, #i];
+	                    END_FOR;
+	                    #det := #det * INT_TO_REAL(#sign);
+	                END_IF;
+	            END_IF;
+	        ELSE
+	            "Scheduler".flag_global := "Scheduler".flag_global + 1;
+	            RETURN;
+	        END_IF;
+	    END_IF;
+	END_IF;
+	//iterate global flag
+	"Scheduler".flag_global := "Scheduler".flag_global + 1;
+	
+END_FUNCTION
+
